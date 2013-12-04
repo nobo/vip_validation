@@ -13,3 +13,4 @@ extras
 hold_over
 node_modules
 
+.DS_Store
