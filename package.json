@@ -1,0 +1,23 @@
+{
+  "name": "VIPFeedValidator",
+  "version": "0.1.0",
+  "description": "Performs validation procedures on a VIP Feed file.",
+  "main": "app.js",
+  "dependencies": {
+    "mongoose": "~3.8.1",
+    "libxmljs": "~0.8.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/antinodes/vip_validation.git"
+  },
+  "author": "LMN Solutions, LLC",
+  "license": "BSD-3-Clause",
+  "bugs": {
+    "url": "https://github.com/antinodes/vip_validation/issues"
+  }
+}
