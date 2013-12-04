@@ -1,13 +1,13 @@
-Vip Validation
+VIP Validation
 ==============
 
 Validation for voter information project
 
-this project is a basic proof of concept for the processing of VIP Feeds compliant to the VIP v3.0 specification
+This project is a basic proof of concept for the processing of VIP Feeds compliant to the VIP v3.0 specification.  Please forgive me for the lack of comments, docs.  More to come soon..
 
 Getting Started
 
----> Backend Environment
+---> Backend Environment Configuration
 
 Ensure that you have MongoDB installed and running (http://www.mongodb.org/)
 
@@ -24,12 +24,17 @@ Initialize service by passing the [relative] path of the file you wish to commit
 For now, please load all files to be parsed in the 'xml' directory..this will change in later iterations.
 
 Ensure that you have Node.js and its package manager (NPM) installed and configured (nodejs.org)
+
 pre-step) brew install node, npm (on MacOSX)
+pre-step) npm install the following modules..
+-->  libxmljs (my xml parser of the month)
+-->  stay tuned here...likely more to come
 
 1) node app.js <file_path>  : where "file_path" is a location reachable via the the hosting server
 
 Please send any comments, questions, etc my way.
 
 Thanks!
+
 -nobo
  
