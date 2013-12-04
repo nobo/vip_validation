@@ -3,10 +3,10 @@
  */
 
 
-fs = require('fs');
-xmlParser = require('libxmljs');
-mongoose = require('mongoose');
-config = require('./config');
+var fs = require('fs');
+var xmlParser = require('libxmljs');
+var mongoose = require('mongoose');
+var config = require('./config');
 require('./model/schema/feed');
 require('./db/mongo');
 
@@ -45,26 +45,62 @@ function parse_feed(vipFeedTxt){
   var vipFeedDoc = xmlParser.parseXmlString(fs.readFileSync(vipFeedTxt.toString()));
   validFeed = is_valid_feed(vipFeedDoc);
 
-  //build Feed object here
-  var Feed = mongoose.model('Feed');
+  /*
+   *  parse feed election element data..if the feed data's determined to be valid
+   *  TODO: refactor the following blocks
+   */
+  if(validFeed){
+    election_node = vipFeedDoc.get("//election");
+    var election_date = election_node.get("//date").text();
+    var election_type = election_node.get("//election_type").text();
+    var state_id = election_node.get("//state_id").text();
+    var state_name = vipFeedDoc.get("//state/name").text();
+    var feed_name = vipFeedTxt;
+    var election_id = vipFeedDoc.get("election").attr("id").value();
+    var vip_id = election_node.get("//vip_id").text();
 
-  //TODO: capture all relevant element data from the XML (using lixmljs)
-  var vipFeed = new Feed(
-    {
-      payload: vipFeedTxt,
-      election_date: null, //Date()
-      loaded_on: Date().now,
-      validation_status: validFeed,
-      feed_status: "Status Placeholder",
-      feed_type: "Type Placeholder",
-      name: "My Feed Placeholder",
-      state: "State Placeholder",  //will eventually be a VIP ID (TODO: consider for sprint 2)
-      date: Date().now //TODO: keep this entry or "loaded_on"
-    }
-  );
+    /*
+     * TODO: add the following to schema in Sprint 2 -nab
+     * var state_wide = election_node.get("statewide").text();
+     * //var registration_info = election_node.get("//election_info");
+     */
+  }
 
+  //build Feed object and capture all relevant element data from the XML (using lixmljs)
+  var Feed = mongoose.model(config.mongoose.model.feed);
+
+  var vipFeed = null;
+  if(validFeed) {
+    vipFeed = new Feed(
+      {
+        payload: vipFeedTxt,
+        election_date: new Date(election_date), //Date()
+        loaded_on: Date(),
+        validation_status: validFeed,
+        feed_status: "Undetermined",
+        feed_type: election_type,
+        name: feed_name,
+        state: state_name,  //will eventually be a VIP ID (TODO: consider for sprint 2)
+        date: Date(), //TODO: keep this entry or "loaded_on"
+        election_id: election_id,
+        vip_id: vip_id
+      }
+    );
+  }
+  else {
+    vipFeed = new Feed(
+      {
+        payload: vipFeedTxt,
+        loaded_on: Date(),
+        validation_status: validFeed,
+        name: feed_name,
+        date: Date() //TODO: keep this entry or "loaded_on"
+      }
+    );
+  }
   //save feed into MongoDB
-  save_feed(vipFeed);
+  console.log(vipFeed.toString());
+  save_model(vipFeed);
 }
 
 /**
@@ -84,7 +120,7 @@ function is_valid_feed(vipFeedDoc) {
 }
 
 
-function save_feed(vipModel){
+function save_model(vipModel){
 
   var saved = false;
 
