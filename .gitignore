@@ -12,6 +12,7 @@ results
 extras
 hold_over
 node_modules
+test_data
 
 .idea
 .DS_Store

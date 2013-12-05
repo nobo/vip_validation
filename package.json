@@ -1,5 +1,5 @@
 {
-  "name": "VIPFeedValidator",
+  "name": "vipfeedvalidator",
   "version": "0.1.0",
   "description": "Performs validation procedures on a VIP Feed file.",
   "main": "app.js",

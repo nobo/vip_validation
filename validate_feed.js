@@ -49,22 +49,23 @@ function parse_feed(vipFeedTxt){
    *  parse feed election element data..if the feed data's determined to be valid
    *  TODO: refactor the following blocks
    */
-  if(validFeed){
+  //if(validFeed){
     election_node = vipFeedDoc.get("//election");
     var election_date = election_node.get("//date").text();
     var election_type = election_node.get("//election_type").text();
     var state_id = election_node.get("//state_id").text();
     var state_name = vipFeedDoc.get("//state/name").text();
-    var feed_name = vipFeedTxt;
+    var feed_name = vipFeedTxt.substring(vipFeedTxt.lastIndexOf("/")+1, vipFeedTxt.lastIndexOf('.'));
     var election_id = vipFeedDoc.get("election").attr("id").value();
     var vip_id = election_node.get("//vip_id").text();
+    var feed_path = vipFeedTxt.substring(0,vipFeedTxt.lastIndexOf("/")+1);
 
     /*
      * TODO: add the following to schema in Sprint 2 -nab
      * var state_wide = election_node.get("statewide").text();
      * //var registration_info = election_node.get("//election_info");
      */
-  }
+  //}
 
   //build Feed object and capture all relevant element data from the XML (using lixmljs)
   var Feed = mongoose.model(config.mongoose.model.feed);
@@ -83,7 +84,8 @@ function parse_feed(vipFeedTxt){
         state: state_name,  //will eventually be a VIP ID (TODO: consider for sprint 2)
         date: Date(), //TODO: keep this entry or "loaded_on"
         election_id: election_id,
-        vip_id: vip_id
+        vip_id: vip_id,
+        feed_path: feed_path
       }
     );
   }
@@ -94,12 +96,13 @@ function parse_feed(vipFeedTxt){
         loaded_on: Date(),
         validation_status: validFeed,
         name: feed_name,
+        feed_path: feed_path,
         date: Date() //TODO: keep this entry or "loaded_on"
       }
     );
   }
   //save feed into MongoDB
-  console.log(vipFeed.toString());
+  console.log("saving feed", feed_name, "to Mongo");
   save_model(vipFeed);
 }
 
