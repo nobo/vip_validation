@@ -34,17 +34,18 @@ The feed processor utlizes Node.js and MongoDB. Ensure that you have [Node](node
 ---
 
 ### Running The Processor
-1. Start MongoDB
-  - Ensure the process is running (i.e. - mongodb on MacOSX )
+1. **Start MongoDB**
+  * Ensure the process is running (i.e. - mongodb on MacOSX )
 
-            >  mongod                   
+            >  mongod             
 
-  - Optionally, monitor or debug mongo in separate shells, respectively
-  
+2. **(Optional) Setup Monitoring**  
+  * Optionally, monitor or debug mongo in separate shells, respectively
+
             >  mongo              
             >  tail -f mongodb_log_dir 
 
-2. Start Feed Processor
+3. **Start Feed Processor**
   - Initialize service by passing the [relative] path of the file you wish to parse (e.g.- ./xml/<file_to_parse>) as an argument to the application at initialization
    
             > node app.js feed_doc_path
