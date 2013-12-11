@@ -17,9 +17,20 @@ config.vipSchema = {
  */
 config.mongoose = {
   model: {
-    feed: "Feed",
+    ballot: "Ballot",
+    candidate: "Candidate",
+    contest: "Contest",
     election: "Election",
+    electionAdministration: "ElectionAdministration",
+    electionOfficial: "ElectionOfficial",
+    electoralDistrict: "ElectoralDistrict",
+    feed: "Feed",
+    locality: "Locality",
+    pollingLocation: "PollingLocation",
+    precinct: "Precinct",
+    precinctSplit: "PrecinctSplit",
     source: "Source"
+
   },
   connectionString: "mongodb://localhost/vipfeed"
 }
