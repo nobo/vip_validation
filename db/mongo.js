@@ -11,4 +11,35 @@
   db.once('open', function callback(){
     console.log("initialized VIP database via Mongoose");
   });
-  //TODO: define useful schema methods..esp for debug
+
+function save_model(vipModel){
+
+  var saved = false;
+
+  vipModel.save(function(err, vipModel) {
+    if(err) {
+      console.error("failed to save");
+
+    }
+    else {
+      console.log("successful save");
+      saved = true;
+      process.exit();
+    }
+    //vipModel = vipModel;
+  });
+  return vipModel;
+  //in case we want to do something clever with this one day, consider:  return [vipModel, saved];
+}
+
+module.exports = function(metisModel) {
+  return {
+    save_metis_model: function(){
+      return save_model(metisModel);
+    }
+  };
+}
+
+
+
+
