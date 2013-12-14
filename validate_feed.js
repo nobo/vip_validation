@@ -7,7 +7,7 @@ var fs = require('fs');
 var xmlParser = require('libxmljs');
 var mongoose = require('mongoose');
 var config = require('./config');
-require('./model/schema/feed');
+require('./db/schema/feed');
 require('./db/mongo');
 
 /**
