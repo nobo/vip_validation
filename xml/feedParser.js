@@ -9,14 +9,14 @@ var fs = require('fs');
 var path = require('path');
 var xmlParser = require('libxmljs');
 var mongoose = require('mongoose');
-var mongo = require('./db/mongo');
-var config = require('./config');
-var vipFeedDoc = null;  //to be used for object
+//var mongo = require('../db/mongo');
+var config = require('../config');
+var vipFeedDoc = null, metisData = [];  //to be used for object
 
 //dynamically load all schema objects
-require("fs").readdirSync("./db/schema/").forEach(function(file) {
-  //TODO: //ensure these are valid javascript files
-  require("./db/schema/" + file);
+require("fs").readdirSync("../db/schema/").forEach(function(file) {
+  if(path.extname(file) == ".js") //ensure we're only loading valid javascript files
+    require("../db/schema/" + file);
 });
 
 /**
@@ -46,9 +46,8 @@ function parse_feed(vipFeedTxt){
    parsePrecinct();
    parsePrecinctSplit();
    parseSource();
-   */
-  //return parseFeed(vipFeedTxt);// parseElection();
-  return parseSource();
+  */
+  return parseContest(); //dataElements;
 }
 
 
@@ -76,42 +75,51 @@ function parseCandidate(){
 
 function parseSource(){
   var Source = mongoose.model(config.mongoose.model.source);
-
-  sourceModel = new Source(
-    {
-      vip_id: parse_schema_element("source", "vip_id"),
-      date: parse_schema_element("source", "date"),
-      description: parse_schema_element("source", "description"),
-      name: parse_schema_element("source", "name"),
-      organization_url: parse_schema_element("source", "organization_url"),
-      feed_contact_url: parse_schema_element("source", "feed_contact_url"),
-      tou_url: parse_schema_element("source", "tou_url")
-    }
-  );
-  return sourceModel;
+  sourceCollection = [];
+  sourceNodes = vipFeedDoc.root().find("//source");
+  sourceNodes.forEach(function(sourceNode){
+    sourceModel = new Source(
+      {
+        vip_id: parse_node_element(sourceNode, "vip_id"),
+        date: parse_node_element(sourceNode, "date"),
+        description: parse_node_element(sourceNode, "description"),
+        name: parse_node_element(sourceNode, "name"),
+        organization_url: parse_node_element(sourceNode, "organization_url"),
+        feed_contact_url: parse_node_element(sourceNode, "feed_contact_url"),
+        tou_url: parse_node_element(sourceNode, "tou_url")
+      }
+    );
+    sourceCollection.push(sourceModel);
+  });
+  return sourceCollection;
 }
 
 function parseContest(){
   var Contest = mongoose.model(config.mongoose.model.contest);
-  contestModel = new Contest(
-    {
-      id: parse_schema_attribute("contest", "id"),
-      election_id:  parse_schema_element("contest", "election_id"),
-      electoral_district_id: parse_schema_element("contest", "electoral_district_id"),
-      type: parse_schema_element("contest", "type"),
-      partisan: parse_schema_element("contest", "partisan"),
-      primary_party: parse_schema_element("contest", "primary_party"),
-      electorate_specifications: parse_schema_element("contest", "electorate_specifications"),
-      special: parse_schema_element("contest", "special"),
-      office: parse_schema_element("contest", "office"),
-      filing_closed_date: parse_schema_element("contest", "filing_closed_date"),
-      number_elected:  parse_schema_element("contest", "number_elected"),
-      number_voting_for: parse_schema_element("contest", "number_voting_for"),
-      ballot_id: parse_schema_element("contest", "ballot_id"),
-      ballot_placement: parse_schema_element("contest", "ballot_placement")
-    }
-  );
-  return contestModel;
+  contestCollection = [];
+  contestNodes = vipFeedDoc.root().find("//contest");
+  contestNodes.forEach(function(contestNode){
+    contestModel = new Contest(
+      {
+        id: parse_node_attribute(contestNode, "id"),
+        election_id:  parse_node_element(contestNode, "election_id"),
+        electoral_district_id: parse_node_element(contestNode, "electoral_district_id"),
+        type: parse_node_element(contestNode, "type"),
+        partisan: parse_node_element(contestNode, "partisan"),
+        primary_party: parse_node_element(contestNode, "primary_party"),
+        electorate_specifications: parse_node_element(contestNode, "electorate_specifications"),
+        special: parse_node_element(contestNode, "special"),
+        office: parse_node_element(contestNode, "office"),
+        filing_closed_date: parse_node_element(contestNode, "filing_closed_date"),
+        number_elected:  parse_node_element(contestNode, "number_elected"),
+        number_voting_for: parse_node_element(contestNode, "number_voting_for"),
+        ballot_id: parse_node_element(contestNode, "ballot_id"),
+        ballot_placement: parse_node_element(contestNode, "ballot_placement")
+      }
+    );
+    contestCollection.push(contestNode);
+  });
+  return contestCollection;
 }
 
 function parseElectionAdmin(){
@@ -321,10 +329,47 @@ function parse_schema_attribute(node_name, attribute_name){
   return result;
 }
 
-//model = parse_feed("./feed_data/valid/sample_feed_for_v3.0.xml");
-//console.log(model);
+/**
+ * securely grabs node element for given node/element pair
+ * @param node
+ * @param element_name
+ * @returns {string|*}
+ */
+function parse_node_element(node, element_name){
+  result = "";
+  try {
+    search_predicate = "//" + element_name;
+    result = node.get(search_predicate).text();
+  }
+  catch(err){
+    console.error("Illegal schema element: ", element_name, "for", node.name());
+  }
+  return result;
+}
+
+/**
+ * securely grabs node attribute for given node/element pair
+ * @param node
+ * @param element_name
+ * @returns {string|*}
+ */
+function parse_node_attribute(node, attribute_name){
+  result = "";
+  search_predicate = "//" + attribute_name;
+  try {
+    result = node.attr(search_predicate).value();
+  }
+  catch(err){
+    console.error("Illegal schema attribute: ", attribute_name, "for", node.name());
+  }
+  return result;
+}
+
+//model = parse_feed("sample_feed_for_v3.0.xml");
+//model.forEach(function(entry){ console.log(entry.toString()) });
 //mongo(model).save_metis_model();
 
 //TODO 1: Thorough testing of Models Add
 //TODO 2: Recursive saves
 //TODO 3: Feed metrics
+//TODO 4: Common Data collection returned by parseFeed (metisData);
