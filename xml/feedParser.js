@@ -321,8 +321,8 @@ function parse_schema_attribute(node_name, attribute_name){
   return result;
 }
 
-model = parse_feed("./feed_data/valid/sample_feed_for_v3.0.xml");
-console.log(model);
+//model = parse_feed("./feed_data/valid/sample_feed_for_v3.0.xml");
+//console.log(model);
 //mongo(model).save_metis_model();
 
 //TODO 1: Thorough testing of Models Add
