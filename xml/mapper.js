@@ -19,7 +19,7 @@ function mapXmlValues(feedXmlDoc){
 
 mapElements();
 
-function mapElements(feedXmlDoc) {
+function mapElements() {
   //console.log(config.mongoose.model);
   for(var somenum = 1; somenum < config.mongoose.model.length; somenum = somenum + 1 ) {
 
