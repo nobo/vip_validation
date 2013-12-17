@@ -2,6 +2,8 @@
  * Created by Akelaus on 12/2/13.
  */
 mongoose = require('mongoose');
+config = require('../../config');
+
 
 // Create a schema for our data
 var ElectionSchema = new mongoose.Schema({
@@ -19,5 +21,5 @@ var ElectionSchema = new mongoose.Schema({
 });
 
 // Use the schema to register a model with MongoDb
-mongoose.model('Election', ElectionSchema);
-var Election = mongoose.model('Election');
+mongoose.model(config.mongoose.model.election, ElectionSchema);
+//var Election = mongoose.model('Election');

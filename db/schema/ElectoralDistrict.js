@@ -2,6 +2,7 @@
  * Created by Akelaus on 12/11/13.
  */
 mongoose = require('mongoose');
+config = require('../../config');
 
 //define ElectoralDistrict schema and register in MongoDB
 var ElectoralDistrictSchema = mongoose.Schema({
@@ -10,5 +11,5 @@ var ElectoralDistrictSchema = mongoose.Schema({
   type: String,
   number: String
 });
-mongoose.model('ElectoralDistrict', ElectoralDistrictSchema);
+mongoose.model(config.mongoose.model.electoralDistrict, ElectoralDistrictSchema);
 //var ElectoralDistrict = mongoose.model('ElectoralDistrict');

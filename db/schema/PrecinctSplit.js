@@ -2,6 +2,7 @@
  * Created by Akelaus on 12/11/13.
  */
 mongoose = require('mongoose');
+config = require('../../config');
 
 //define PrecinctSplit schema and register in MongoDB
 var PrecinctSplitSchema = mongoose.Schema({
@@ -12,5 +13,5 @@ var PrecinctSplitSchema = mongoose.Schema({
   polling_location_id: String,
   ballot_style_image_url: String
 });
-mongoose.model('PrecinctSplit', PrecinctSplitSchema);
+mongoose.model(config.mongoose.model.precinctSplit, PrecinctSplitSchema);
 //var PrecinctSplit = mongoose.model('PrecinctSplit');

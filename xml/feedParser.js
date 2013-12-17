@@ -6,9 +6,10 @@ var fs = require('fs');
 var path = require('path');
 var xmlParser = require('libxmljs');
 var mongoose = require('mongoose');
-//var mongo = require('../db/mongo');
+var mongo = require('../db/mongo');
 var config = require('../config');
-var vipFeedDoc = null, metisData = [];  //to be used for object
+var vipFeedDoc = null;
+var metisData = [];  //to be used for object
 
 //dynamically load all schema objects
 require("fs").readdirSync("../db/schema/").forEach(function(file) {
@@ -25,76 +26,100 @@ function parse_feed(vipFeedTxt){
 
   console.log('feed to parse: ' + vipFeedTxt);
   vipDoc = fs.readFileSync(vipFeedTxt.toString());
-  vipFeedDoc = xmlParser.parseXmlString(vipDoc);
-  //validFeed = is_valid_feed(vipFeedDoc);
+  vipFeedDoc = xmlParser.parseXml(vipDoc);
 
-  //parse document objects
-  /*
-   parseBallot();
-   parseCandidate();
-   parseContest();
-   parseElection();
-   parseElectionAdmin();
-   parseElectionOfficial();
-   parseElectoralDistrict();
-   parseFeed(vipFeedTxt);
-   parseLocality();
-   parsePollingLocation();
-   parsePrecinct();
-   parsePrecinctSplit();
-   parseSource();
-  */
-  return parseContest(); //dataElements;
+  //finally, let's get to parsing (by Object)..
+  parseFeed(vipFeedTxt);
+  parseElection();
+  parseBallot();
+  parseCandidate();
+  parseContest();
+  parseElectionAdmin();
+  parseElectionOfficial();
+  parseElectoralDistrict();
+  parseLocality();
+  parsePollingLocation();
+  parsePrecinct();
+  parsePrecinctSplit();
+  parseSource();
+
+}
+
+function saveAllData(){
+  //recursively save each model parsed into Mongo
+  metisData.forEach(function(model){
+    mongo(model).save_metis_model();
+  });
 }
 
 
 function parseBallot(){
-  ballot_node = vipFeedDoc.get("//ballot");
+  var Ballot = mongoose.model(config.mongoose.model.ballot);
+  searchTerm = "//" + config.mongoose.model.ballot;
+  ballotNodes = vipFeedDoc.root().find(searchTerm);
+  ballotNodes.forEach(function(ballotNode){
+    ballotModel = new Ballot(
+      {
+         id:  parse_node_attribute(ballotNode, "id"), //required
+         referendum_id: parse_node_element(ballotNode, "referendum_id"),
+         candidate_id: parse_node_element(ballotNode, "candidate_id"),
+         sort_order:  parse_node_element(ballotNode, "sort_order"),
+         custom_ballot_id: parse_node_element(ballotNode, "custom_ballot_id"),
+         write_in:  parse_node_element(ballotNode, "write_in"),  //TODO: parse as boolean
+         image_url: parse_node_element(ballotNode, "image_url")
+      });
+    metisData.push(ballotModel);
+  });
+  return metisData;
 }
 
 function parseCandidate(){
   var Candidate = mongoose.model(config.mongoose.model.candidate);
-
-  candidateModel = new Candidate(
-    {
-      party: parse_schema_element("candidate", "party"),
-      candidate_url: parse_schema_element("candidate", "candidate_url"),
-      biography: parse_schema_element("candidate", "biography"),
-      phone: parse_schema_element("candidate","phone"),
-      photo_url: parse_schema_element("candidate","photo_url"),
-      filed_mailing_address: parse_schema_element("candidate","filed_mailing_address"),
-      email: parse_schema_element("candidate","email"),
-      sort_order: parse_schema_element("candidate","sort_order")
-    }
-  )
-  return candidateModel;
+  searchTerm = "//" + config.mongoose.model.candidate;
+  candidateNodes = vipFeedDoc.root().find(searchTerm);
+  candidateNodes.forEach(function(candidateNode){
+    candidateModel = new Candidate(
+      {
+        name: parse_node_element(candidateNode, "name"),
+         party: parse_node_element(candidateNode, "party"),
+        candidate_url: parse_node_element(candidateNode, "candidate_url"),
+        biography: parse_node_element(candidateNode, "biography"),
+        phone: parse_node_element(candidateNode,"phone"),
+        photo_url: parse_node_element(candidateNode,"photo_url"),
+        filed_mailing_address: parse_node_element(candidateNode,"filed_mailing_address"),
+        email: parse_node_element(candidateNode,"email"),
+        sort_order: parse_node_element(candidateNode,"sort_order")
+      });
+    metisData.push(candidateModel);
+  });
+  return metisData;
 }
 
 function parseSource(){
   var Source = mongoose.model(config.mongoose.model.source);
-  sourceCollection = [];
-  sourceNodes = vipFeedDoc.root().find("//source");
+  searchTerm = "//" + config.mongoose.model.source;
+  sourceNodes = vipFeedDoc.root().find(searchTerm);
   sourceNodes.forEach(function(sourceNode){
     sourceModel = new Source(
       {
+        id: parse_node_attribute(sourceNode, "id"),
         vip_id: parse_node_element(sourceNode, "vip_id"),
-        date: parse_node_element(sourceNode, "date"),
+        datetime: parse_node_element(sourceNode, "datetime"),
         description: parse_node_element(sourceNode, "description"),
         name: parse_node_element(sourceNode, "name"),
         organization_url: parse_node_element(sourceNode, "organization_url"),
-        feed_contact_url: parse_node_element(sourceNode, "feed_contact_url"),
+        feed_contact_id: parse_node_element(sourceNode, "feed_contact_id"),
         tou_url: parse_node_element(sourceNode, "tou_url")
-      }
-    );
-    sourceCollection.push(sourceModel);
+      });
+    metisData.push(sourceModel);
   });
-  return sourceCollection;
+  return metisData;
 }
 
 function parseContest(){
   var Contest = mongoose.model(config.mongoose.model.contest);
-  contestCollection = [];
-  contestNodes = vipFeedDoc.root().find("//contest");
+  searchTerm = "//" + config.mongoose.model.contest;
+  contestNodes = vipFeedDoc.root().find(searchTerm);
   contestNodes.forEach(function(contestNode){
     contestModel = new Contest(
       {
@@ -114,220 +139,213 @@ function parseContest(){
         ballot_placement: parse_node_element(contestNode, "ballot_placement")
       }
     );
-    contestCollection.push(contestNode);
+    metisData.push(contestModel);
   });
-  return contestCollection;
+  return metisData;
 }
 
 function parseElectionAdmin(){
   var ElectionAdmin = mongoose.model(config.mongoose.model.electionAdministration);
-  electionModel = new ElectionAdmin(
-    {
-      id: parse_schema_attribute("election_administration", "id"),     //required
-      name: parse_schema_element("election_administration", "name"),
-      eo_id: parse_schema_element("election_administration", "eo_id"),
-      ovc_id: parse_schema_element("election_administration", "ovc_id"),
-      physical_address: parse_schema_element("election_administration", "physical_address"),
-      mailing_address: parse_schema_element("election_administration", "mailing_address"),
-      elections_url: parse_schema_element("election_administration", "elections_url"),
-      registration_url: parse_schema_element("election_administration", "registration_url"),
-      am_i_registered_url: parse_schema_element("election_administration", "am_i_registered_url"),
-      absentee_url: parse_schema_element("election_administration", "absentee_url"),
-      where_do_i_vote_url: parse_schema_element("election_administration", "where_do_i_vote_url"),
-      what_is_on_my_ballot_url: parse_schema_element("election_administration", "what_is_on_my_ballot_url"),
-      rules_url: parse_schema_element("election_administration", "rules_url"),
-      voter_services: parse_schema_element("election_administration", "voter_services"),
-      hours: parse_schema_element("election_administration", "hours")
-    }
-  );
-  return electionModel;
+  searchTerm = "//" + config.mongoose.model.electionAdministration;
+  electionAdminNodes = vipFeedDoc.root().find(searchTerm);
+  electionAdminNodes.forEach(function(electionAdminNode){
+    electionModel = new ElectionAdmin(
+      {
+        id: parse_node_attribute(electionAdminNode, "id"),     //required
+        name: parse_node_element(electionAdminNode, "name"),
+        eo_id: parse_node_element(electionAdminNode, "eo_id"),
+        ovc_id: parse_node_element(electionAdminNode, "ovc_id"),
+        physical_address: parse_node_element(electionAdminNode, "physical_address"),
+        mailing_address: parse_node_element(electionAdminNode, "mailing_address"),
+        elections_url: parse_node_element(electionAdminNode, "elections_url"),
+        registration_url: parse_node_element(electionAdminNode, "registration_url"),
+        am_i_registered_url: parse_node_element(electionAdminNode, "am_i_registered_url"),
+        absentee_url: parse_node_element(electionAdminNode, "absentee_url"),
+        where_do_i_vote_url: parse_node_element(electionAdminNode, "where_do_i_vote_url"),
+        what_is_on_my_ballot_url: parse_node_element(electionAdminNode, "what_is_on_my_ballot_url"),
+        rules_url: parse_node_element(electionAdminNode, "rules_url"),
+        voter_services: parse_node_element(electionAdminNode, "voter_services"),
+        hours: parse_node_element(electionAdminNode, "hours")
+    });
+    metisData.push(electionModel);
+  });
+  return metisData;
 }
 
 function parseElectionOfficial(){
   var ElectionOfficial = mongoose.model(config.mongoose.model.electionOfficial);
-  electionModel = new ElectionOfficial(
-    {
-      id: parse_schema_attribute("election_official", "id"),   //required
-      title: parse_schema_element("election_official", "title"),
-      phone: parse_schema_element("election_official", "phone"),
-      fax: parse_schema_element("election_official", "fax"),
-      email: parse_schema_element("election_official", "email")
-    }
-  );
-  return electionModel;
+  searchTerm = "//" + config.mongoose.model.electionOfficial;
+  electionOfficialNodes = vipFeedDoc.root().find(searchTerm);
+  electionOfficialNodes.forEach(function(electionOfficialNode){
+    electionOfficialModel = new ElectionOfficial(
+      {
+        id: parse_node_attribute(electionOfficialNode, "id"),   //required
+        name: parse_node_element(electionOfficialNode, "name"),
+        title: parse_node_element(electionOfficialNode, "title"),
+        phone: parse_node_element(electionOfficialNode, "phone"),
+        fax: parse_node_element(electionOfficialNode, "fax"),
+        email: parse_node_element(electionOfficialNode, "email")
+      }
+    );
+    metisData.push(electionOfficialModel);
+  });
+  return metisData;
 }
 
 function parseElectoralDistrict(){
   var ElectoralDistrict = mongoose.model(config.mongoose.model.electoralDistrict);
-  electoralDistrict = new ElectoralDistrict(
-    {
-      id: parse_schema_attribute("electoral_district", "id"),
-      name: parse_schema_element("electoral_district", "name"),
-      type: parse_schema_element("electoral_district", "type"),
-      number: parse_schema_element("electoral_district", "number")
-    }
-  );
-  return electoralDistrict;
+  searchTerm = "//" + config.mongoose.model.electoralDistrict;
+  electoralDistrictNodes = vipFeedDoc.root().find(searchTerm);
+  electoralDistrictNodes.forEach(function(electoralDistrictNode){
+    electoralDistrictModel = new ElectoralDistrict(
+      {
+        id: parse_node_attribute(electoralDistrictNode, "id"),
+        name: parse_node_element(electoralDistrictNode, "name"),
+        type: parse_node_element(electoralDistrictNode, "type"),
+        number: parse_node_element(electoralDistrictNode, "number")
+    });
+    metisData.push(electoralDistrictModel);
+  });
+  return metisData;
 }
 
 function parseLocality(){
   var Locality = mongoose.model(config.mongoose.model.locality);
-  localityModel = new Locality(
+  searchTerm = "//" + config.mongoose.model.locality;
+  localityNodes = vipFeedDoc.root().find(searchTerm);
+  localityNodes.forEach(function(localityNode){
+    localityModel = new Locality(
     {
-      date: parse_schema_element("locality", "date"),
-      name: parse_schema_element("locality", "name"),
-      state_id: parse_schema_element("locality", "state_id"),
-      type: parse_schema_element("locality", "type"),
-      election_admin_id: parse_schema_element("locality", "election_administration_id"),
-      early_vote_site_id: parse_schema_element("locality", "early_vote_site_id")
-    }
-  )
-  return localityModel;
+        name: parse_node_element(localityNode, "name"),
+        state_id: parse_node_element(localityNode, "state_id"),
+        type: parse_node_element(localityNode, "type"),
+        election_administration_id: parse_node_element(localityNode, "election_administration_id"),
+        early_vote_site_id: parse_node_element(localityNode, "early_vote_site_id")
+    });
+    metisData.push(localityModel);
+  });
+  return metisData;
 }
 
 function parsePollingLocation(){
   var PollingLocation = mongoose.model(config.mongoose.model.pollingLocation);
-  pollingLocationModel = new PollingLocation(
-    {
-      id: parse_schema_attribute("polling_location", "id"),
-      address: parse_schema_element("polling_location", "address"),    //TODO: figure out XMLComplexType mapping
-      directions: parse_schema_element("polling_location", "directions"),
-      polling_hours: parse_schema_element("polling_location", "polling_hours"),
-      photo_url: parse_schema_element("polling_location", "photo_url")
-    }
-  )
-  return pollingLocationModel;
+  searchTerm = "//" + config.mongoose.model.pollingLocation;
+  pollingLocations = vipFeedDoc.root().find(searchTerm);
+  pollingLocations.forEach(function(pollingLocation){
+    pollingLocationModel = new PollingLocation(
+      {
+        id: parse_node_attribute(pollingLocation, "id"),
+        address: parse_node_element(pollingLocation, "address"),    //TODO: figure out XMLComplexType mapping
+        directions: parse_node_element(pollingLocation, "directions"),
+        polling_hours: parse_node_element(pollingLocation, "polling_hours"),
+        photo_url: parse_node_element(pollingLocation, "photo_url")
+    });
+    metisData.push(pollingLocationModel);
+  });
+  return metisData;
 }
 
 function parsePrecinct(){
   var Precinct = mongoose.model(config.mongoose.model.precinct);
-  precinctModel = new Precinct(
-    {
-      id: parse_schema_attribute("precinct", "id"),       //required
-      name: parse_schema_element("precinct", "name"),
-      number: parse_schema_element("precinct", "number"),
-      locality_id: parse_schema_element("precinct", "locality_id"),
-      electoral_district_id: parse_schema_element("precinct", "electoral_district_id"),
-      ward: parse_schema_element("precinct", "ward"),
-      mail_only: parse_schema_element("precinct", "mail_only"),
-      polling_location_id: parse_schema_element("precinct", "polling_location_id"),
-      early_vote_site_id: parse_schema_element("precinct", "early_vote_site_id"),
-      ballot_style_image_url: parse_schema_element("precinct", "ballot_style_image_url")
-    }
-  );
-  return precinctModel;
+  searchTerm = "//" + config.mongoose.model.precinct;
+  precinctNodes = vipFeedDoc.root().find(searchTerm); //TODO: refactor these two lines into a single call
+  precinctNodes.forEach(function(precinctNode){
+    precinctModel = new Precinct(
+      {
+        id: parse_node_attribute(precinctNode, "id"),       //required
+        name: parse_node_element(precinctNode, "name"),
+        number: parse_node_element(precinctNode, "number"),
+        locality_id: parse_node_element(precinctNode, "locality_id"),
+        electoral_district_id: parse_node_element(precinctNode, "electoral_district_id"),
+        ward: parse_node_element(precinctNode, "ward"),
+        mail_only: parse_node_element(precinctNode, "mail_only"),
+        polling_location_id: parse_node_element(precinctNode, "polling_location_id"),
+        early_vote_site_id: parse_node_element(precinctNode, "early_vote_site_id"),
+        ballot_style_image_url: parse_node_element(precinctNode, "ballot_style_image_url")
+      });
+      metisData.push(precinctModel);
+  });
+  return metisData;
 }
 
 function parsePrecinctSplit(){
   var PrecinctSplit = mongoose.model(config.mongoose.model.precinctSplit);
-  precinctSplitModel = new PrecinctSplit(
-    {
-      id: parse_schema_attribute("precinct", "id"),       //required
-      name: parse_schema_element("precinct", "name"),
-      precinct_id: parse_schema_element("precinct", "precinct_id"),
-      electoral_district_id: parse_schema_element("precinct", "electoral_district_id"),
-      polling_location_id: parse_schema_element("precinct", "polling_location_id"),
-      ballot_style_image_url: parse_schema_element("precinct", "ballot_style_image_url")
-    }
-  )
-  return precinctSplitModel;
-}
-
-function parseFeed(vipFeedTxt){
-  var feed_name = vipFeedTxt.substring(vipFeedTxt.lastIndexOf("/")+1, vipFeedTxt.lastIndexOf('.'));
-  var feed_path = vipFeedTxt.substring(0,vipFeedTxt.lastIndexOf("/")+1);
+  searchTerm = "//" + config.mongoose.model.precinctSplit;
+  precinctSplitNodes = vipFeedDoc.root().find(searchTerm);
+  precinctSplitNodes.forEach(function(precinctSplitNode){
+    precinctSplitModel = new PrecinctSplit(
+      {
+        id: parse_node_attribute(precinctSplitNode, "id"),       //required
+        name: parse_node_element(precinctSplitNode, "name"),
+        precinct_id: parse_node_element(precinctSplitNode, "precinct_id"),
+        electoral_district_id: parse_node_element(precinctSplitNode, "electoral_district_id"),
+        polling_location_id: parse_node_element(precinctSplitNode, "polling_location_id"),
+        ballot_style_image_url: parse_node_element(precinctSplitNode, "ballot_style_image_url")
+      });
+      metisData.push(precinctSplitModel);
+  });
+  return metisData;
 }
 
 function parseElection(){
-  /*
-   *  parse feed election element data..if the feed data's determined to be valid
-   *  TODO: refactor the following blocks
-   */
-  //if(validFeed){
-  election_node = vipFeedDoc.get("//election");
-  var election_date = election_node.get("//date").text();
-  var election_type = election_node.get("//election_type").text();
-  var state_id = election_node.get("//state_id").text();
-  var state_name = vipFeedDoc.get("//state/name").text();
-  var election_id = vipFeedDoc.get("election").attr("id").value();
-  var vip_id = election_node.get("//vip_id").text();
+  var Election = mongoose.model(config.mongoose.model.election);
+  searchTerm = "//" + config.mongoose.model.election;
+  electionNodes = vipFeedDoc.root().find(searchTerm);
+  electionNodes.forEach(function(electionNode){
+    electionModel = new Election(
+    {
+      id: String,  //required
+      date: parse_node_element(electionNode, "date"),
+      type: parse_node_element(electionNode, "election_type"),
+      state_id: parse_node_element(electionNode, "state_id"),
+      statewide: parse_node_element(electionNode, "state_wide"),
+      registration_info: parse_node_element(electionNode, "registration_info"),
+      results_url: parse_node_element(electionNode, "results_url"),
+      polling_hours: parse_node_element(electionNode, "polling_hours"),
+      election_day_registration: parse_node_element(electionNode, "election_day_registration"),
+      registration_deadline: parse_node_element(electionNode, "registration_deadline"),
+      absentee_request_deadline: parse_node_element(electionNode, "absentee_request_deadline")
+    });
+    metisData.push(electionModel);
+  });
+  return metisData;
+}
 
+function parseFeed(vipFeedTxt){
+  var Feed = mongoose.model(config.mongoose.model.feed);
+  var feed_name = vipFeedTxt.substring(vipFeedTxt.lastIndexOf("/")+1, vipFeedTxt.lastIndexOf('.'));
+  var feed_path = path.dirname(vipFeedTxt);
+  searchTerm = "//" + config.mongoose.model.election;
+  electionNodes = vipFeedDoc.root().find(searchTerm);
+  electionNodes.forEach(function(electionNode){
+    feedModel = new Feed(
+    {
+      payload: vipFeedDoc.toString(),
+      election_date: parse_node_element(electionNode, "date"), //Date()
+      loaded_on: Date(),
+      validation_status: true,
+      feed_status: "Undetermined",
+      feed_type: parse_node_element(electionNode, "election_type"),
+      name: feed_name, //feed_name,
+      state: parse_node_element(electionNode, "state/name"),  //will eventually be a VIP ID (TODO: consider for sprint 2)
+      date: Date(), //TODO: keep this entry or "loaded_on"
+      election_id: parse_node_attribute(electionNode, "id"),
+      vip_id: parse_node_element(electionNode, "vip_id"),
+      feed_path: feed_path //feed_path
+    });
+    metisData.push(feedModel);
+  });
+  return metisData;
 
   /*
    * TODO: add the following to schema in Sprint 2 -nab
    * var state_wide = election_node.get("statewide").text();
    * //var registration_info = election_node.get("//election_info");
    */
-  //}
-
-  //build Feed object and capture all relevant element data from the XML (using lixmljs)
-  var vipFeed = null;
-  var Feed = mongoose.model(config.mongoose.model.feed);
-
-  //if(validFeed) {
-  vipFeed = new Feed(
-    {
-      payload: "", //vipFeedTxt,
-      election_date: new Date(election_date), //Date()
-      loaded_on: Date(),
-      validation_status: true,
-      feed_status: "Undetermined",
-      feed_type: election_type,
-      name: "", //feed_name,
-      state: state_name,  //will eventually be a VIP ID (TODO: consider for sprint 2)
-      date: Date(), //TODO: keep this entry or "loaded_on"
-      election_id: election_id,
-      vip_id: vip_id,
-      feed_path: "", //feed_path
-    }
-  );
-  return vipFeed;
-  //}
 }
 
 /**
- * securely grabs schema element for given node/element pair
- * @param node
- * @param element_name
- * @returns {string|*}
- */
-function parse_schema_element(node_name, element_name){
-
-  search_predicate = "//" + node_name;
-  node = vipFeedDoc.get(search_predicate);
-
-  result = "";
-  try {
-    search_predicate = "//" + element_name;
-    result = node.get(search_predicate).text();
-  }
-  catch(err){
-    console.error("Illegal schema element: ", element_name, "for", node_name);
-  }
-  return result;
-}
-
-/**
- * securely grabs schema element for given node/element pair
- * @param node
- * @param element_name
- * @returns {string|*}
- */
-function parse_schema_attribute(node_name, attribute_name){
-  result = "";
-  search_predicate = "//" + attribute_name;
-  try {
-
-    result = vipFeedDoc.get(node_name).attr(search_predicate).value();
-  }
-  catch(err){
-    console.error("Illegal schema attribute: ", attribute_name, "for", node_name);
-  }
-  return result;
-}
-
-/**
- * securely grabs node element for given node/element pair
+ * seamlessly grabs node element for given node/element pair
  * @param node
  * @param element_name
  * @returns {string|*}
@@ -335,8 +353,11 @@ function parse_schema_attribute(node_name, attribute_name){
 function parse_node_element(node, element_name){
   result = "";
   try {
-    search_predicate = "//" + element_name;
-    result = node.get(search_predicate).text();
+    search_predicate = element_name;
+    res = node.get(search_predicate);
+    if(res != null)
+      result = res.text();
+    //console.log("element:", element_name, "| value:", result); // <-- debug line
   }
   catch(err){
     console.error("Illegal schema element: ", element_name, "for", node.name());
@@ -345,16 +366,19 @@ function parse_node_element(node, element_name){
 }
 
 /**
- * securely grabs node attribute for given node/element pair
+ * seamlessly grabs node attribute for given node/element pair
  * @param node
  * @param element_name
  * @returns {string|*}
  */
 function parse_node_attribute(node, attribute_name){
   result = "";
-  search_predicate = "//" + attribute_name;
+  search_predicate = attribute_name;
   try {
-    result = node.attr(search_predicate).value();
+    res = node.attr(search_predicate);
+    if(res != null)
+      result = res.value();
+    //console.log("attribute:", attribute_name, " | value:", result); // <-- debug line
   }
   catch(err){
     console.error("Illegal schema attribute: ", attribute_name, "for", node.name());
@@ -362,11 +386,11 @@ function parse_node_attribute(node, attribute_name){
   return result;
 }
 
-//model = parse_feed("sample_feed_for_v3.0.xml");
-//model.forEach(function(entry){ console.log(entry.toString()) });
-//mongo(model).save_metis_model();
+//parse_feed("sample_feed_for_v3.0.xml");
+//process.exit();
 
-//TODO 1: Thorough testing of Models Add
-//TODO 2: Recursive saves
+
+//DONE 1: Thorough testing of Models Add
+//Done 2: Recursive saves
 //TODO 3: Feed metrics
-//TODO 4: Common Data collection returned by parseFeed (metisData);
+//Done 4: Common Data collection returned by parseFeed (metisData);

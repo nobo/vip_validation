@@ -102,7 +102,7 @@ function parse_feed(vipFeedTxt){
     );
   }
   //save feed into MongoDB
-  console.log("saving feed", feed_name, "to Mongo");
+
   save_model(vipFeed);
 }
 

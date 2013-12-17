@@ -2,6 +2,7 @@
  * Created by Akelaus on 12/11/13.
  */
 mongoose = require('mongoose');
+config = require('../../config');
 
 //define Contest schema and register in MongoDB
 var ContestSchema = mongoose.Schema({
@@ -20,5 +21,5 @@ var ContestSchema = mongoose.Schema({
   ballot_id: String,
   ballot_placement: String
 });
-mongoose.model('Contest', ContestSchema);
+mongoose.model(config.mongoose.model.contest, ContestSchema);
 //var Contest = mongoose.model('Contest');

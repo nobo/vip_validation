@@ -2,6 +2,7 @@
  * Created by Akelaus on 12/11/13.
  */
 mongoose = require('mongoose');
+config = require('../../config');
 
 //define PollingLocation schema and register in MongoDB
 var PollingLocationSchema = mongoose.Schema({
@@ -11,5 +12,5 @@ var PollingLocationSchema = mongoose.Schema({
   polling_hours: String,
   photo_url: String
 });
-mongoose.model('PollingLocation', PollingLocationSchema);
+mongoose.model(config.mongoose.model.pollingLocation, PollingLocationSchema);
 //var PollingLocation = mongoose.model('PollingLocation');

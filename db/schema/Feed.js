@@ -13,9 +13,10 @@ var FeedSchema = mongoose.Schema({
   feed_status: String,
   feed_type: String,
   name: String,
-  state: String,  //will eventually be a VIP ID (TODO: consider for sprint 2)
+  state: String,
   date: Date,
   election_id: String,
-  vip_id: String
+  vip_id: String,
+  feed_path: String
 });
 mongoose.model(config.mongoose.model.feed, FeedSchema);

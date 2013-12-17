@@ -2,6 +2,7 @@
  * Created by Akelaus on 12/11/13.
  */
 mongoose = require('mongoose');
+config = require('../../config');
 
 //define ElectionAdmin schema and register in MongoDB
 var ElectionAdminSchema = mongoose.Schema({
@@ -21,5 +22,5 @@ var ElectionAdminSchema = mongoose.Schema({
   voter_services: String,
   hours: String
 });
-mongoose.model('ElectionAdmin', ElectionAdminSchema);
+mongoose.model(config.mongoose.model.electionAdministration, ElectionAdminSchema);
 //var ElectionAdmin = mongoose.model('ElectionAdmin');

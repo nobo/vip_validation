@@ -2,6 +2,7 @@
  * Created by Akelaus on 12/11/13.
  */
 mongoose = require('mongoose');
+config = require('../../config');
 
 //define Precinct schema and register in MongoDB
 var PrecinctSchema = mongoose.Schema({
@@ -16,5 +17,5 @@ var PrecinctSchema = mongoose.Schema({
   early_vote_site_id: String,
   ballot_style_image_url: String
 });
-mongoose.model('Precinct', PrecinctSchema);
+mongoose.model(config.mongoose.model.precinct, PrecinctSchema);
 //var Precinct = mongoose.model('Precinct');

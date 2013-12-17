@@ -18,8 +18,7 @@ function save_model(vipModel){
 
   vipModel.save(function(err, vipModel) {
     if(err) {
-      console.error("failed to save");
-
+      console.error("failed to save " + vipModel);
     }
     else {
       console.log("successful save");
@@ -34,7 +33,7 @@ function save_model(vipModel){
 
 module.exports = function(metisModel) {
   return {
-    save_metis_model: function(){
+     save_metis_model: function(){
       return save_model(metisModel);
     }
   };

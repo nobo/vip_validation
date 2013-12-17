@@ -3,16 +3,18 @@
  */
 
   mongoose = require('mongoose');
+  config = require('../../config');
 
 //define Source schema and register in MongoDB
 var SourceSchema = mongoose.Schema({
   vip_id: String,  //required
-  date: Date,
+  datetime: Date,
   description: String,
   name: String,
   organization_url: String,
-  feed_contact_url: String, //TODO: investigate possibly replacing with feed_contact_id
+  feed_contact_id: String, //TODO: investigate possibly replacing with feed_contact_id
   tou_url: String
 });
-mongoose.model('Source', SourceSchema);
-//var Source = mongoose.model('Source');
+mongoose.model(config.mongoose.model.source, SourceSchema);
+
+// instantiate a registered model using the following: var Source = mongoose.model('source');
