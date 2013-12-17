@@ -46,6 +46,7 @@ function parse_feed(vipFeedTxt){
 
   metisData = require("./xml/feedParser")(vipFeedTxt).parse_metis_feed();
 
+  //console.log(metisData);
   //recursively save each model parsed into Mongo
   metisData.forEach(function(model){
       mongo(model).save_metis_model();

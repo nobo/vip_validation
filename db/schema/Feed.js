@@ -16,6 +16,7 @@ var FeedSchema = mongoose.Schema({
   state: String,
   date: Date,
   election_id: String,
+  source_id: String,
   vip_id: String,
   feed_path: String
 });

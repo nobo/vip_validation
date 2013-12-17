@@ -7,6 +7,7 @@
 
 //define Source schema and register in MongoDB
 var SourceSchema = mongoose.Schema({
+  id: String,
   vip_id: String,  //required
   datetime: Date,
   description: String,

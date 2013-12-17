@@ -29,7 +29,7 @@ function parse_feed(vipFeedTxt){
   vipFeedDoc = xmlParser.parseXml(vipDoc);
 
   //finally, let's get to parsing (by Object)..
-  parseFeed(vipFeedTxt);
+  parseSource();
   parseElection();
   parseBallot();
   parseCandidate();
@@ -41,7 +41,7 @@ function parse_feed(vipFeedTxt){
   parsePollingLocation();
   parsePrecinct();
   parsePrecinctSplit();
-  parseSource();
+  parseFeed(vipFeedTxt);
 
   return metisData;
 }
@@ -96,8 +96,8 @@ function parseSource(){
 
   var Source = mongoose.model(config.mongoose.model.source);
   searchTerm = "//" + config.mongoose.model.source;
-  sourceNodes = vipFeedDoc.root().find(searchTerm);
-  sourceNodes.forEach(function(sourceNode){
+  sourceNode = vipFeedDoc.root().get(config.mongoose.model.source);
+  //sourceNode.forEach(function(sourceNode){
     sourceModel = new Source(
       {
         id: parse_node_attribute(sourceNode, "id"),
@@ -109,8 +109,9 @@ function parseSource(){
         feed_contact_id: parse_node_element(sourceNode, "feed_contact_id"),
         tou_url: parse_node_element(sourceNode, "tou_url")
       });
+  //console.log("adding source data.." + sourceModel);
     metisData.push(sourceModel);
-  });
+  //});
   return metisData;
 }
 
@@ -336,18 +337,19 @@ function parseFeed(vipFeedTxt){
   electionNodes.forEach(function(electionNode){
     feedModel = new Feed(
     {
-      payload: vipFeedDoc.toString(),
-      election_date: parse_node_element(electionNode, "date"), //Date()
+      //payload: vipFeedDoc.toString(),
+      election_date: parse_node_element(electionNode, "date"),
       loaded_on: Date(),
       validation_status: true,
       feed_status: "Undetermined",
       feed_type: parse_node_element(electionNode, "election_type"),
-      name: feed_name, //feed_name,
-      state: parse_node_element(electionNode, "state/name"),  //will eventually be a VIP ID (TODO: consider for sprint 2)
+      name: feed_name,
+      state: parse_node_element(electionNode, "state_id"),
       date: Date(), //TODO: keep this entry or "loaded_on"
+      source_id: parse_node_attribute(vipFeedDoc.root().get("source"), "id"),
       election_id: parse_node_attribute(electionNode, "id"),
-      vip_id: parse_node_element(electionNode, "vip_id"),
-      feed_path: feed_path //feed_path
+      vip_id: parse_node_element(vipFeedDoc.root().get("source"), "vip_id"),
+      feed_path: feed_path
     });
     metisData.push(feedModel);
   });
@@ -403,17 +405,17 @@ function parse_node_attribute(node, attribute_name){
 }
 
 
-module.exports = function(feed_path) {
+module.exports = function (feed_path) {
   return {
-    parse_metis_feed: function(){
+    parse_metis_feed: function () {
       return parse_feed(feed_path);
     }
   };
 }
-
-//parse_feed("sample_feed_for_v3.0.xml");
-//process.exit();
-
+/*
+parse_feed(process.argv[2]);
+process.exit();
+*/
 
 //DONE 1: Thorough testing of Models Add
 //Done 2: Recursive saves

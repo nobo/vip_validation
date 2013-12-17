@@ -18,7 +18,7 @@ function save_model(vipModel){
 
   vipModel.save(function(err, vipModel) {
     if(err) {
-      console.error("failed to save " + vipModel);
+      console.error("failed to save " + err);
     }
     else {
       console.log("successful save");
