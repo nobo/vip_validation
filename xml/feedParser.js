@@ -96,8 +96,8 @@ function parseSource(){
 
   var Source = mongoose.model(config.mongoose.model.source);
   searchTerm = "//" + config.mongoose.model.source;
-  sourceNode = vipFeedDoc.root().get(config.mongoose.model.source);
-  //sourceNode.forEach(function(sourceNode){
+  sourceNodes = vipFeedDoc.root().find(config.mongoose.model.source);
+  sourceNodes.forEach(function(sourceNode){
     sourceModel = new Source(
       {
         id: parse_node_attribute(sourceNode, "id"),
@@ -109,9 +109,8 @@ function parseSource(){
         feed_contact_id: parse_node_element(sourceNode, "feed_contact_id"),
         tou_url: parse_node_element(sourceNode, "tou_url")
       });
-  //console.log("adding source data.." + sourceModel);
-    metisData.push(sourceModel);
-  //});
+  metisData.push(sourceModel);
+  });
   return metisData;
 }
 
@@ -311,7 +310,7 @@ function parseElection(){
   electionNodes.forEach(function(electionNode){
     electionModel = new Election(
     {
-      id: String,  //required
+      id: parse_node_element(electionNode, "id"),  //required
       date: parse_node_element(electionNode, "date"),
       type: parse_node_element(electionNode, "election_type"),
       state_id: parse_node_element(electionNode, "state_id"),
@@ -354,12 +353,6 @@ function parseFeed(vipFeedTxt){
     metisData.push(feedModel);
   });
   return metisData;
-
-  /*
-   * TODO: add the following to schema in Sprint 2 -nab
-   * var state_wide = election_node.get("statewide").text();
-   * //var registration_info = election_node.get("//election_info");
-   */
 }
 
 /**
