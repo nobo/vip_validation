@@ -7,7 +7,7 @@
 
 
 if (process.argv.length > 2 && process.argv[2] != null){
-  validate_feed = require("./validate_feed")
+  validate_feed = require("./validate_feed");
   validate_feed(process.argv[2]).process_path();
 }
 else {

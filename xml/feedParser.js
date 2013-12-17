@@ -12,7 +12,7 @@ var vipFeedDoc = null;
 var metisData = [];  //to be used for object
 
 //dynamically load all schema objects
-require("fs").readdirSync("../db/schema/").forEach(function(file) {
+fs.readdirSync("./db/schema/").forEach(function(file) {
   if(path.extname(file) == ".js") //ensure we're only loading valid javascript files
     require("../db/schema/" + file);
 });
@@ -43,17 +43,11 @@ function parse_feed(vipFeedTxt){
   parsePrecinctSplit();
   parseSource();
 
+  return metisData;
 }
-
-function saveAllData(){
-  //recursively save each model parsed into Mongo
-  metisData.forEach(function(model){
-    mongo(model).save_metis_model();
-  });
-}
-
 
 function parseBallot(){
+  console.log('identifying ballot data to parse...');
   var Ballot = mongoose.model(config.mongoose.model.ballot);
   searchTerm = "//" + config.mongoose.model.ballot;
   ballotNodes = vipFeedDoc.root().find(searchTerm);
@@ -69,11 +63,13 @@ function parseBallot(){
          image_url: parse_node_element(ballotNode, "image_url")
       });
     metisData.push(ballotModel);
+    console.log("..");
   });
   return metisData;
 }
 
 function parseCandidate(){
+  console.log('identifying candidate data to parse...');
   var Candidate = mongoose.model(config.mongoose.model.candidate);
   searchTerm = "//" + config.mongoose.model.candidate;
   candidateNodes = vipFeedDoc.root().find(searchTerm);
@@ -96,6 +92,8 @@ function parseCandidate(){
 }
 
 function parseSource(){
+  console.log('scanning for source data to parse...');
+
   var Source = mongoose.model(config.mongoose.model.source);
   searchTerm = "//" + config.mongoose.model.source;
   sourceNodes = vipFeedDoc.root().find(searchTerm);
@@ -117,6 +115,8 @@ function parseSource(){
 }
 
 function parseContest(){
+  console.log('scanning for contest data to parse...');
+
   var Contest = mongoose.model(config.mongoose.model.contest);
   searchTerm = "//" + config.mongoose.model.contest;
   contestNodes = vipFeedDoc.root().find(searchTerm);
@@ -145,6 +145,8 @@ function parseContest(){
 }
 
 function parseElectionAdmin(){
+  console.log('detecting election administration data to parse...');
+
   var ElectionAdmin = mongoose.model(config.mongoose.model.electionAdministration);
   searchTerm = "//" + config.mongoose.model.electionAdministration;
   electionAdminNodes = vipFeedDoc.root().find(searchTerm);
@@ -173,6 +175,8 @@ function parseElectionAdmin(){
 }
 
 function parseElectionOfficial(){
+  console.log('scanning election official data to parse...');
+
   var ElectionOfficial = mongoose.model(config.mongoose.model.electionOfficial);
   searchTerm = "//" + config.mongoose.model.electionOfficial;
   electionOfficialNodes = vipFeedDoc.root().find(searchTerm);
@@ -193,6 +197,8 @@ function parseElectionOfficial(){
 }
 
 function parseElectoralDistrict(){
+  console.log('scanning electoral district data to parse...');
+
   var ElectoralDistrict = mongoose.model(config.mongoose.model.electoralDistrict);
   searchTerm = "//" + config.mongoose.model.electoralDistrict;
   electoralDistrictNodes = vipFeedDoc.root().find(searchTerm);
@@ -210,6 +216,8 @@ function parseElectoralDistrict(){
 }
 
 function parseLocality(){
+  console.log('scanning locality data to parse...');
+
   var Locality = mongoose.model(config.mongoose.model.locality);
   searchTerm = "//" + config.mongoose.model.locality;
   localityNodes = vipFeedDoc.root().find(searchTerm);
@@ -228,6 +236,8 @@ function parseLocality(){
 }
 
 function parsePollingLocation(){
+  console.log('scannning polling location data to parse...');
+
   var PollingLocation = mongoose.model(config.mongoose.model.pollingLocation);
   searchTerm = "//" + config.mongoose.model.pollingLocation;
   pollingLocations = vipFeedDoc.root().find(searchTerm);
@@ -246,6 +256,8 @@ function parsePollingLocation(){
 }
 
 function parsePrecinct(){
+  console.log('scanning precinct data to parse...');
+
   var Precinct = mongoose.model(config.mongoose.model.precinct);
   searchTerm = "//" + config.mongoose.model.precinct;
   precinctNodes = vipFeedDoc.root().find(searchTerm); //TODO: refactor these two lines into a single call
@@ -269,6 +281,8 @@ function parsePrecinct(){
 }
 
 function parsePrecinctSplit(){
+  console.log('scanning precinct split data to parse...');
+
   var PrecinctSplit = mongoose.model(config.mongoose.model.precinctSplit);
   searchTerm = "//" + config.mongoose.model.precinctSplit;
   precinctSplitNodes = vipFeedDoc.root().find(searchTerm);
@@ -288,6 +302,8 @@ function parsePrecinctSplit(){
 }
 
 function parseElection(){
+  console.log('scanning election data to parse...');
+
   var Election = mongoose.model(config.mongoose.model.election);
   searchTerm = "//" + config.mongoose.model.election;
   electionNodes = vipFeedDoc.root().find(searchTerm);
@@ -384,6 +400,15 @@ function parse_node_attribute(node, attribute_name){
     console.error("Illegal schema attribute: ", attribute_name, "for", node.name());
   }
   return result;
+}
+
+
+module.exports = function(feed_path) {
+  return {
+    parse_metis_feed: function(){
+      return parse_feed(feed_path);
+    }
+  };
 }
 
 //parse_feed("sample_feed_for_v3.0.xml");

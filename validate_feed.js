@@ -7,8 +7,7 @@ var fs = require('fs');
 var xmlParser = require('libxmljs');
 var mongoose = require('mongoose');
 var config = require('./config');
-require('./db/schema/feed');
-require('./db/mongo');
+var mongo = require('./db/mongo');
 
 /**
  * main process routine for path passed into
@@ -45,65 +44,12 @@ function parse_feed(vipFeedTxt){
   var vipFeedDoc = xmlParser.parseXmlString(fs.readFileSync(vipFeedTxt.toString()));
   validFeed = is_valid_feed(vipFeedDoc);
 
-  /*
-   *  parse feed election element data..if the feed data's determined to be valid
-   *  TODO: refactor the following blocks
-   */
-  //if(validFeed){
-    election_node = vipFeedDoc.get("//election");
-    var election_date = election_node.get("//date").text();
-    var election_type = election_node.get("//election_type").text();
-    var state_id = election_node.get("//state_id").text();
-    var state_name = vipFeedDoc.get("//state/name").text();
-    var feed_name = vipFeedTxt.substring(vipFeedTxt.lastIndexOf("/")+1, vipFeedTxt.lastIndexOf('.'));
-    var election_id = vipFeedDoc.get("election").attr("id").value();
-    var vip_id = election_node.get("//vip_id").text();
-    var feed_path = vipFeedTxt.substring(0,vipFeedTxt.lastIndexOf("/")+1);
+  metisData = require("./xml/feedParser")(vipFeedTxt).parse_metis_feed();
 
-    /*
-     * TODO: add the following to schema in Sprint 2 -nab
-     * var state_wide = election_node.get("statewide").text();
-     * //var registration_info = election_node.get("//election_info");
-     */
-  //}
-
-  //build Feed object and capture all relevant element data from the XML (using lixmljs)
-  var Feed = mongoose.model(config.mongoose.model.feed);
-
-  var vipFeed = null;
-  if(validFeed) {
-    vipFeed = new Feed(
-      {
-        payload: vipFeedTxt,
-        election_date: new Date(election_date), //Date()
-        loaded_on: Date(),
-        validation_status: validFeed,
-        feed_status: "Undetermined",
-        feed_type: election_type,
-        name: feed_name,
-        state: state_name,  //will eventually be a VIP ID (TODO: consider for sprint 2)
-        date: Date(), //TODO: keep this entry or "loaded_on"
-        election_id: election_id,
-        vip_id: vip_id,
-        feed_path: feed_path
-      }
-    );
-  }
-  else {
-    vipFeed = new Feed(
-      {
-        payload: vipFeedTxt,
-        loaded_on: Date(),
-        validation_status: validFeed,
-        name: feed_name,
-        feed_path: feed_path,
-        date: Date() //TODO: keep this entry or "loaded_on"
-      }
-    );
-  }
-  //save feed into MongoDB
-
-  save_model(vipFeed);
+  //recursively save each model parsed into Mongo
+  metisData.forEach(function(model){
+      mongo(model).save_metis_model();
+  });
 }
 
 /**
@@ -120,27 +66,6 @@ function is_valid_feed(vipFeedDoc) {
   isValid = vipFeedDoc.validate(vipXSDDoc);
   console.log("Parsed feed value: " + isValid); //TODO: add schema for valid_status
   return isValid;
-}
-
-
-function save_model(vipModel){
-
-  var saved = false;
-
-  vipModel.save(function(err, vipModel) {
-    if(err) {
-      console.error("failed to save");
-
-    }
-    else {
-      console.log("successful save");
-      saved = true;
-      process.exit();
-    }
-    //vipModel = vipModel;
-  })
-
-  //in case we want to do something clever with this one day, consider:  return [vipModel, saved];
 }
 
 module.exports = function(feed_path) {
