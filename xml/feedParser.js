@@ -11,16 +11,20 @@ var config = require('../config');
 var vipFeedDoc = null;
 var metisData = [];  //to be used for object
 
-//dynamically load all schema objects
+//TODO: to enhance debug and better organize objects, consider utilizing metis as a hash
+
+/*
+ *  "lazy load" load all metis schema objects
+ */
 fs.readdirSync("./db/schema/").forEach(function(file) {
-  if(path.extname(file) == ".js") //ensure we're only loading valid javascript files
+  if(path.extname(file) == ".js") //only load javascript files
     require("../db/schema/" + file);
 });
 
 /**
  * parses a string path into an xml document, maps this to mongoose schema and returns the result
- * @param vipFeedTxt
- * @returns {Feed}
+ * @param vipFeedTxt - file path of VIP v3.0 compliant feed source file to be parsed
+ * @returns {metisData} - collection of mongoose Schema objects created from xml data
  */
 function parse_feed(vipFeedTxt){
 
@@ -42,15 +46,17 @@ function parse_feed(vipFeedTxt){
   parsePrecinct();
   parsePrecinctSplit();
   parseFeed(vipFeedTxt);
-
   return metisData;
 }
 
+/**
+ * parses VIP Ballot Elements and returns them as a collection Mongoose Schema objects
+ * @returns {metisData}
+ */
 function parseBallot(){
   console.log('identifying ballot data to parse...');
   var Ballot = mongoose.model(config.mongoose.model.ballot);
-  searchTerm = "//" + config.mongoose.model.ballot;
-  ballotNodes = vipFeedDoc.root().find(searchTerm);
+  ballotNodes = vipFeedDoc.root().find("//" + config.mongoose.model.ballot);
   ballotNodes.forEach(function(ballotNode){
     ballotModel = new Ballot(
       {
@@ -63,11 +69,14 @@ function parseBallot(){
          image_url: parse_node_element(ballotNode, "image_url")
       });
     metisData.push(ballotModel);
-    console.log("..");
   });
   return metisData;
 }
 
+/**
+ * parses VIP Candidate Elements and returns them as a collection Mongoose Schema objects
+ * @returns {metisData}
+ */
 function parseCandidate(){
   console.log('identifying candidate data to parse...');
   var Candidate = mongoose.model(config.mongoose.model.candidate);
@@ -77,7 +86,7 @@ function parseCandidate(){
     candidateModel = new Candidate(
       {
         name: parse_node_element(candidateNode, "name"),
-         party: parse_node_element(candidateNode, "party"),
+        party: parse_node_element(candidateNode, "party"),
         candidate_url: parse_node_element(candidateNode, "candidate_url"),
         biography: parse_node_element(candidateNode, "biography"),
         phone: parse_node_element(candidateNode,"phone"),
@@ -91,6 +100,10 @@ function parseCandidate(){
   return metisData;
 }
 
+/**
+ * parses VIP Source Elements and returns them as a collection Mongoose Schema objects
+ * @returns {metisData}
+ */
 function parseSource(){
   console.log('scanning for source data to parse...');
 
@@ -110,10 +123,15 @@ function parseSource(){
         tou_url: parse_node_element(sourceNode, "tou_url")
       });
   metisData.push(sourceModel);
+      console.log(sourceModel);
   });
   return metisData;
 }
 
+/**
+ * parses VIP Contest Elements and returns them as a collection Mongoose Schema objects
+ * @returns {metisData}
+ */
 function parseContest(){
   console.log('scanning for contest data to parse...');
 
@@ -144,6 +162,10 @@ function parseContest(){
   return metisData;
 }
 
+/**
+ * parses VIP Election Elements and returns them as a collection Mongoose Schema objects
+ * @returns {metisData}
+ */
 function parseElectionAdmin(){
   console.log('detecting election administration data to parse...');
 
@@ -174,6 +196,10 @@ function parseElectionAdmin(){
   return metisData;
 }
 
+/**
+ * parses VIP ElectionOfficial Elements and returns them as a collection Mongoose Schema objects
+ * @returns {metisData}
+ */
 function parseElectionOfficial(){
   console.log('scanning election official data to parse...');
 
@@ -196,6 +222,10 @@ function parseElectionOfficial(){
   return metisData;
 }
 
+/**
+ * parses VIP ElectoralDistrict Elements and returns them as a collection Mongoose Schema objects
+ * @returns {metisData}
+ */
 function parseElectoralDistrict(){
   console.log('scanning electoral district data to parse...');
 
@@ -215,6 +245,10 @@ function parseElectoralDistrict(){
   return metisData;
 }
 
+/**
+ * parses VIP Locality Elements and returns them as a collection Mongoose Schema objects
+ * @returns {metisData}
+ */
 function parseLocality(){
   console.log('scanning locality data to parse...');
 
@@ -235,6 +269,10 @@ function parseLocality(){
   return metisData;
 }
 
+/**
+ * parses VIP PollingLocation Elements and returns them as a collection Mongoose Schema objects
+ * @returns {metisData}
+ */
 function parsePollingLocation(){
   console.log('scannning polling location data to parse...');
 
@@ -255,6 +293,10 @@ function parsePollingLocation(){
   return metisData;
 }
 
+/**
+ * parses VIP Precinct Elements and returns them as a collection Mongoose Schema objects
+ * @returns {metisData}
+ */
 function parsePrecinct(){
   console.log('scanning precinct data to parse...');
 
@@ -280,6 +322,10 @@ function parsePrecinct(){
   return metisData;
 }
 
+/**
+ * parses VIP PrecinctSplit Elements and returns them as a collection Mongoose Schema objects
+ * @returns {metisData}
+ */
 function parsePrecinctSplit(){
   console.log('scanning precinct split data to parse...');
 
@@ -301,6 +347,10 @@ function parsePrecinctSplit(){
   return metisData;
 }
 
+/**
+ * parses VIP Election Elements and returns them as a collection Mongoose Schema objects
+ * @returns {metisData}
+ */
 function parseElection(){
   console.log('scanning election data to parse...');
 
@@ -327,6 +377,10 @@ function parseElection(){
   return metisData;
 }
 
+/**
+ * parses VIP Feed Elements and returns them as a collection Mongoose Schema objects
+ * @returns {metisData}
+ */
 function parseFeed(vipFeedTxt){
   var Feed = mongoose.model(config.mongoose.model.feed);
   var feed_name = vipFeedTxt.substring(vipFeedTxt.lastIndexOf("/")+1, vipFeedTxt.lastIndexOf('.'));
@@ -405,10 +459,11 @@ module.exports = function (feed_path) {
     }
   };
 }
-/*
-parse_feed(process.argv[2]);
-process.exit();
-*/
+
+
+//parse_feed(process.argv[2]);
+//process.exit();
+
 
 //DONE 1: Thorough testing of Models Add
 //Done 2: Recursive saves
