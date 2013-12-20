@@ -32,7 +32,7 @@ config.mongoose = {
     source: "source"
 
   },
-  connectionString: "mongodb://localhost/vipfeed"
+  connectionString: "mongodb://localhost/metis"
 }
 
 /**
